@@ -21,6 +21,7 @@ from EntityFactoryBase import EntityFactory
 from .TimeSeriesAnalyzer import TimeSeriesAnalyzer
 from .Fourier import Fourier
 from .ARMA import ARMA
+from .RWD import RWD
 from .Wavelet import Wavelet
 from .PolynomialRegression import PolynomialRegression
 
@@ -28,5 +29,6 @@ factory = EntityFactory('TimeSeriesAnalyzer')
 # TODO map lower case to upper case, because of silly ROM namespace problems
 aliases = {'Fourier': 'fourier',
            'ARMA': 'arma',
+           'RWD': 'rwd',
            'Wavelet': 'wavelet'}
 factory.registerAllSubtypes(TimeSeriesAnalyzer, alias=aliases)
