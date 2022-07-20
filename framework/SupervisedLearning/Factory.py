@@ -107,7 +107,7 @@ from .ScikitLearn.Tree.DecisionTreeClassifier import DecisionTreeClassifier
 from .ScikitLearn.Tree.DecisionTreeRegressor import DecisionTreeRegressor
 from .ScikitLearn.Tree.ExtraTreeClassifier import ExtraTreeClassifier
 from .ScikitLearn.Tree.ExtraTreeRegressor import ExtraTreeRegressor
-from sonar.src import TSAValidator
+
 
 ################################################################################
 
