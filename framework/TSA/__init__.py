@@ -22,7 +22,7 @@ from .TimeSeriesAnalyzer import TimeSeriesAnalyzer
 
 from .Fourier import Fourier
 from .ARMA import ARMA
-
+from .RWD import RWD
 from .Factory import factory
 
 from .TSAUser import TSAUser # needs to be imported AFTER factory!
