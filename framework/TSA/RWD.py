@@ -163,9 +163,20 @@ class RWD(TimeSeriesGenerator,TimeSeriesCharacterizer):
           baseMatrix[:,i] = np.copy(history[i*signatureWindowLength:(i+1)*signatureWindowLength])
       U,s,V = mathUtils.computeTruncatedSingularValueDecomposition(baseMatrix,fi)
       featureMatrix = U.T @ signatureMatrix
-      params[target] = {'uVec'        : U[:,0:fi],
-                        'Feature'     : featureMatrix[0:fi],
-                        'featurePivot': np.arange(allWindowNumber)}
+      print('uVec',U[:,0:fi].shape)
+      print('Feature',featureMatrix[0:fi].shape)
+      
+      print('signatureMatrix',signatureMatrix.shape)
+      
+      
+      
+      
+      
+      
+      params[target] = {'uVec'           : U[:,0:fi],
+                        'Feature'        : featureMatrix[0:fi],
+                        'featurePivot'   : np.arange(allWindowNumber),
+                        'signatureMatrix': signatureMatrix}
     return params
 
 
@@ -214,14 +225,17 @@ class RWD(TimeSeriesGenerator,TimeSeriesCharacterizer):
       
     """
     
+    '''
     pivotF = len(params[target]['Feature'][0])
     numberF = len(params[target]['Feature'])
     synthetic = np.zeros((len(pivot_f*numberF), len(params)))
     for t, (target, _) in enumerate(params.items()):
       sigMatSynthetic =  params[target]['Feature']
       synthetic[:, t] = np.hstack((sigMatSynthetic[0,:-1], sigMatSynthetic[:,-1]))
+    '''
     
-    #synthetic = params[target]['Feature']
+    synthetic = params[target]['Feature']
+    
 
     
     '''
