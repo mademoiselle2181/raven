@@ -29,10 +29,10 @@ from utils import InputData, InputTypes, randomUtils, xmlUtils, mathUtils, impor
 statsmodels = importerUtils.importModuleLazy('statsmodels', globals())
 
 import Distributions
-from .TimeSeriesAnalyzer import TimeSeriesGenerator, TimeSeriesCharacterizer
+from .TimeSeriesAnalyzer import TimeSeriesGenerator, TimeSeriesCharacterizer, TimeSeriesFeaturization
 
 # utility methods
-class RWD(TimeSeriesGenerator,TimeSeriesCharacterizer):
+class RWD(TimeSeriesGenerator,TimeSeriesCharacterizer, TimeSeriesFeaturization):
   r"""
     Randomized Window Decomposition
   """
@@ -177,6 +177,10 @@ class RWD(TimeSeriesGenerator,TimeSeriesCharacterizer):
                         'Feature'        : featureMatrix[0:fi],
                         'featurePivot'   : np.arange(allWindowNumber),
                         'signatureMatrix': signatureMatrix}
+    print('target')
+    print(type(target))
+    print(target)
+    
     return params
 
 
@@ -187,13 +191,16 @@ class RWD(TimeSeriesGenerator,TimeSeriesCharacterizer):
       @ Out, names, list, string list of names
     """
     names = []
+    
     for target in settings['target']:
       base = f'{self.name}__{target}'
       sw = int(settings['signatureWindowLength'])
       fi = int(settings['featureIndex'])
       for i in range(fi):
-        for j in range(sw):
-          names.append(f'{base}__uVec{i}_{j}')
+
+        #names.append(f'{base}__uVec{i}')
+        names.append(f'{base}__feature{i}')
+      names.append(f'{base}__featurePivot')
     return names
 
   def getParamsAsVars(self, params):
@@ -203,12 +210,23 @@ class RWD(TimeSeriesGenerator,TimeSeriesCharacterizer):
       @ Out, rlz, dict, realization-style response
     """
     rlz = {}
+    
+    
     for target, info in params.items():
+      
       base = f'{self.name}__{target}'
-      (k,l) = (info['uVec']).shape
-      for i in range(l):
-        for j in range(k):
-          rlz[f'{base}__uVec{i}_{j}'] = info['uVec'][j,i]
+      rlz[f'_indexMap'] = {base: ('Features', 'featurePivot')}
+      print('base', base)
+      (k,l) = (info['Feature']).shape
+      rlz[base] = info['Feature']
+
+    ## assume k is the same for all variables and the pivot is the same as well   
+    rlz['Features'] = np.arange(k) 
+    rlz['featurePivot'] = info['featurePivot'] 
+    print('rlz', type(rlz))
+    print(rlz)
+
+        
     return rlz
 
 
@@ -224,8 +242,12 @@ class RWD(TimeSeriesGenerator,TimeSeriesCharacterizer):
       Store the features in this generate
       
     """
+    #sw = settings['signatureWindowLength'] 
+    #fi = int(settings['featureIndex'])
+    #synthetic = np.zeros((len(pivot)-sw+1, fi, len(params) ))
     
     '''
+    # This is for condensing all features in one dimension and output
     pivotF = len(params[target]['Feature'][0])
     numberF = len(params[target]['Feature'])
     synthetic = np.zeros((len(pivot_f*numberF), len(params)))
@@ -234,9 +256,20 @@ class RWD(TimeSeriesGenerator,TimeSeriesCharacterizer):
       synthetic[:, t] = np.hstack((sigMatSynthetic[0,:-1], sigMatSynthetic[:,-1]))
     '''
     
-    synthetic = params[target]['Feature']
+    #for t, (target, _) in enumerate(params.items()):
+    #  sigMatSynthetic =  params[target]['Feature']
+    #  print('sigMatSynthetic', sigMatSynthetic.shape)
+    #  #synthetic[:,:, t] = np.hstack((sigMatSynthetic[0,:-1], sigMatSynthetic[:,-1]))
+    #  synthetic[:,:, t] = np.copy(sigMatSynthetic.T)
+    #  print('t = ', t)
     
-
+    synthetic = np.zeros((len(pivot), len(params)))
+    for t, (target, _) in enumerate(params.items()):
+      sigMatSynthetic = params[target]['uVec'] @ params[target]['Feature']
+      synthetic[:, t] = np.hstack((sigMatSynthetic[0,:-1], sigMatSynthetic[:,-1]))
+    #synthetic = params[target]['Feature']
+    
+  
     
     '''
     synthetic = np.zeros((len(pivot), len(params)))
@@ -244,8 +277,33 @@ class RWD(TimeSeriesGenerator,TimeSeriesCharacterizer):
       sigMatSynthetic = params[target]['uVec'] @ params[target]['Feature']
       synthetic[:, t] = np.hstack((sigMatSynthetic[0,:-1], sigMatSynthetic[:,-1]))
     '''
-
+  
     return synthetic
+
+
+
+  def featurization(self, params, pivot, settings):
+    """
+      Generates a synthetic history from fitted parameters.
+      @ In, params, dict, characterization such as otained from self.characterize()
+      @ In, pivot, np.array(float), pivot parameter values
+      @ In, settings, dict, additional settings specific to algorithm
+      @ Out, synthetic, np.array(float), synthetic estimated model signal
+      
+      Store the features in this featurization??
+      
+    """
+    sw = settings['signatureWindowLength'] 
+    fi = int(settings['featureIndex'])
+    featurizationSingal = np.zeros((len(pivot)-sw+1, fi, len(params) ))
+    
+    
+    for t, (target, _) in enumerate(params.items()):
+      sigalFeature =  params[target]['Feature']
+      print('sigalFeature', sigalFeature.shape)
+      featurizationSingal[:,:, t] = np.copy(sigalFeature.T)
+    return featurizationSingal
+
 
   def writeXML(self, writeTo, params):
     """
@@ -260,7 +318,16 @@ class RWD(TimeSeriesGenerator,TimeSeriesCharacterizer):
       writeTo.append(base)
       (m,n) = info["uVec"].shape
       for i in range(n):
-        U0 = info["uVec"][:,0]
+        Ui = info["uVec"][:,i]
+        Fi = info["Feature"][i, :]
+        uVec0 = np.array2string(Ui, formatter={'float_kind':lambda Ui: "%.9e" % Ui})
+        F0 = np.array2string(Fi, formatter={'float_kind':lambda Fi: "%.9e" % Fi})
         counter +=1
+        base.append(xmlUtils.newNode(f'uVec{i}', text=uVec0))
+        base.append(xmlUtils.newNode(f'feature{i}', text=F0))
+        
+        
+        '''
         for p, ar in enumerate(U0):
           base.append(xmlUtils.newNode(f'uVec{i}_{p}', text=f'{float(ar):1.9e}'))
+        '''
