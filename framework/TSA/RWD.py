@@ -29,10 +29,10 @@ from utils import InputData, InputTypes, randomUtils, xmlUtils, mathUtils, impor
 statsmodels = importerUtils.importModuleLazy('statsmodels', globals())
 
 import Distributions
-from .TimeSeriesAnalyzer import TimeSeriesGenerator, TimeSeriesCharacterizer, TimeSeriesFeaturization
+from .TimeSeriesAnalyzer import TimeSeriesGenerator, TimeSeriesCharacterizer
 
 # utility methods
-class RWD(TimeSeriesGenerator,TimeSeriesCharacterizer, TimeSeriesFeaturization):
+class RWD(TimeSeriesGenerator,TimeSeriesCharacterizer):
   r"""
     Randomized Window Decomposition
   """
