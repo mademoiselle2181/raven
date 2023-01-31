@@ -1,0 +1,165 @@
+<?xml version="1.0" ?>
+<Simulation verbosity="all">
+
+
+  <TestInfo>
+    <name>framework/PostProcessors/Metric/test_metric_RWD</name>
+    <author>wangc</author>
+    <created>2017-08-29</created>
+    <classesTested>PostProcessors.Metric</classesTested>
+    <description>
+      This test checks the Metric PostProcessor
+    </description>
+    <revisions>
+      <revision author="wangc" date="2017-12-06">convert to using new data objects</revision>
+      <revision author="wangc" date="2017-11-20">restructure metric system, add time-dependent capability</revision>
+    </revisions>
+  </TestInfo>
+
+  <RunInfo>
+    <WorkingDir>RWDMetricRun</WorkingDir>
+    <Sequence>read,readC, process, processC,print,printC,  PP1</Sequence>
+    <batchSize>1</batchSize>
+  </RunInfo>
+
+  <Files>
+    <Input name="input">../TrainingData/RelapDataGold.csv</Input>
+    <Input name="inputC">../TrainingData/RelapDataCheck.csv</Input>
+  </Files>
+
+
+  <Steps>
+  
+    <IOStep name="read">
+      <Input class="Files" type="">input</Input>
+      <Output class="DataObjects" type="HistorySet">indata</Output>
+    </IOStep>
+    <IOStep name="readC">
+      <Input class="Files" type="">inputC</Input>
+      <Output class="DataObjects" type="HistorySet">indataC</Output>
+    </IOStep>
+
+    <RomTrainer name="processC">
+      <Input class="DataObjects" type="HistorySet">indataC</Input>
+      <Output class="Models" type="ROM">synthC</Output>
+    </RomTrainer>
+    <RomTrainer name="process">
+      <Input class="DataObjects" type="HistorySet">indata</Input>
+      <Output class="Models" type="ROM">synth</Output>
+    </RomTrainer>
+	
+    <IOStep name="print">
+      <Input class="Models" type="ROM">synth</Input>
+      <Output class="DataObjects" type="DataSet">romMeta</Output>
+      <Output class="OutStreams" type="Print">romMeta</Output>
+    </IOStep>
+    <IOStep name="printC">
+      <Input class="Models" type="ROM">synthC</Input>
+      <Output class="DataObjects" type="DataSet">romMetaC</Output>
+      <Output class="OutStreams" type="Print">romMetaC</Output>
+    </IOStep>
+
+	<PostProcess name="PP1">
+      <Input class="DataObjects" type="PointSet">placeholder</Input>
+      <Model class="Models" type="PostProcessor">pp1</Model>
+      <Output class="DataObjects" type="PointSet">Distances</Output>
+      <Output class="OutStreams" type="Print">Distances</Output> 
+    </PostProcess>
+  </Steps>
+
+
+  <Models>   
+	<ROM name="synth" subType="SyntheticHistory">
+      <Target> T_220, Time</Target>
+      <Features>scaling</Features>
+      <pivotParameter>Time</pivotParameter>
+      <rwd target=" T_220" seed = '42'>
+        <signatureWindowLength>20</signatureWindowLength>
+        <featureIndex>2</featureIndex>
+		<sampleType>0</sampleType>
+      </rwd>
+    </ROM>
+	<ROM name="synthC" subType="SyntheticHistory">
+      <Target> T_220, Time</Target>
+      <Features>scaling</Features>
+      <pivotParameter>Time</pivotParameter>
+      <rwd target=" T_220" seed = '42'>
+        <signatureWindowLength>20</signatureWindowLength>
+        <featureIndex>2</featureIndex>
+		<sampleType>0</sampleType>
+      </rwd>
+    </ROM>
+	
+
+    <PostProcessor name="pp1" subType="Metric">
+      <Features type="variable">romMeta|synthC|RWD|T_220|feature0</Features>
+      <Targets type="variable">romMetaC|synthC|RWD|T_220|feature0</Targets>
+      <Metric class="Metrics" type="Metric">euclidean</Metric>
+      <Metric class="Metrics" type="Metric">cosine</Metric>
+
+    </PostProcessor>
+	
+  </Models>
+
+  <Metrics>
+    <Metric name="cosine" subType="SKL">
+      <metricType>paired_distance|cosine</metricType>
+    </Metric>
+
+    <Metric name="euclidean" subType="SKL">
+      <metricType>paired_distance|euclidean</metricType>
+    </Metric>
+
+  </Metrics>
+
+
+
+
+  <DataObjects>
+
+    <DataSet name="romMeta"/>
+    <DataSet name="romMetaC"/>
+    <PointSet name="Distances">
+      <Output>euclidean_ans2_ans, euclidean2_ans2_ans</Output>
+    </PointSet>
+    <PointSet name="placeholder"/>
+	
+    <HistorySet name="indata">
+      <Input>scaling</Input>
+      <Output>T_220</Output>
+      <options>
+        <pivotParameter>Time</pivotParameter>
+      </options>
+    </HistorySet>
+    <HistorySet name="indataC">
+      <Input>scaling</Input>
+      <Output> T_220</Output>
+      <options>
+        <pivotParameter>Time</pivotParameter>
+      </options>
+    </HistorySet>
+    <HistorySet name="samples">
+      <Input>scaling</Input>
+      <Output> T_220</Output>
+      <options>
+        <pivotParameter>Time</pivotParameter>
+      </options>
+    </HistorySet>
+  </DataObjects>
+
+  <OutStreams>
+    <Print name="romMeta">
+      <type>csv</type>
+      <source>romMeta</source>
+    </Print>
+    <Print name="romMetaC">
+      <type>csv</type>
+      <source>romMetaC</source>
+    </Print>
+    <Print name="Distances">
+      <type>csv</type>
+      <source>Distances</source>
+    </Print>
+  </OutStreams>
+
+</Simulation>
